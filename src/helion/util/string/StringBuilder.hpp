@@ -1,12 +1,10 @@
 #pragma once
 
-#include <algorithm>
 #include <sstream>
 #include <string>
 #include <type_traits>
 #include "util/Defines.hpp"
 #include "util/string/String.hpp"
-#include "util/string/UpperString.hpp"
 
 namespace Helion {
 
@@ -48,7 +46,7 @@ public:
             buffer += ss.str();
         } else if constexpr (std::is_arithmetic_v<T>) {
             buffer += std::to_string(t);
-        } else if constexpr (std::is_same_v<T, String> or std::is_same_v<T, UpperString>) {
+        } else if constexpr (std::is_same_v<T, String>) {
             buffer += t.getStdStr();
         } else {
             buffer += t.toString().getStdStr();
@@ -109,7 +107,7 @@ public:
      * provided is clamped so negative numbers become zero.
      */
     void setPrecision(const int precision) {
-        this->precision = std::max(0, precision);
+        this->precision = precision; //std::max(0, precision);
     }
 
     /**

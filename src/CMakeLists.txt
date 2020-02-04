@@ -1245,6 +1245,7 @@ add_executable( zdoom WIN32
     zstrformat.cpp
     zstring.cpp
     # Helion files
+	helion/util/Logging.cpp
 	helion/util/string/String.cpp
     # [BL] Huffman is ZAN
     huffman/bitreader.cpp
@@ -1622,6 +1623,7 @@ source_group("Source Files" FILES ${CMAKE_CURRENT_BINARY_DIR}/sc_man_scanner.h s
 source_group("Bots" FILES astar.cpp astar.h REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/bot.+")
 source_group("Helion Files" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/helion/.+")
 source_group("Helion Files\\Utility" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/helion/util/.+")
+source_group("Helion Files\\Logging" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/helion/util/.+")
 source_group("Helion Files\\Utility\\String" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/helion/util/string/.+")
 source_group("Network\\Client" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/cl_.+")
 source_group("Network\\Misc" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/network.+")

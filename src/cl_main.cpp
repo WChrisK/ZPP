@@ -120,6 +120,9 @@
 #include "am_map.h"
 #include "menu/menu.h"
 #include "v_text.h"
+#include "helion/util/Logging.hpp"
+
+using namespace Helion;
 
 //*****************************************************************************
 //	MISC CRAP THAT SHOULDN'T BE HERE BUT HAS TO BE BECAUSE OF SLOPPY CODING
@@ -9085,7 +9088,7 @@ CCMD(connect)
 
     if (argv.argc() <= 1)
     {
-        Printf("Usage: connect <server IP>\n");
+        Log("Usage: connect <server IP>\n");
         return;
     }
 
