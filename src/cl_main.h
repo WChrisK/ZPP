@@ -197,6 +197,8 @@ void				CLIENT_PREDICT_PlayerPredict( void );
 void				CLIENT_PREDICT_PlayerTeleported( void );
 bool				CLIENT_PREDICT_IsPredicting( void );
 
+bool CLIENT_OnHelionServer();
+
 //*****************************************************************************
 //	EXTERNAL CONSOLE VARIABLES
 

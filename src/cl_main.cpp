@@ -380,6 +380,8 @@ static FString				g_PlayerAccountNames[MAXPLAYERS];
 // [TP] Do we have RCON access to the server?
 static	bool				g_HasRCONAccess = false;
 
+static bool IsHelionServer = false;
+
 //*****************************************************************************
 //	FUNCTIONS
 
@@ -1289,6 +1291,10 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 	switch ( lCommand )
 	{
 	case SVCC_AUTHENTICATE:
+        // We assume that every authentication means we're connecting to a new
+        // server and have to update our state. The server will send us more
+        // information after this task is done.
+        IsHelionServer = false;
 
 		// Print a status message.
 		Printf( "Connected!\n" );
@@ -1520,15 +1526,22 @@ void CLIENT_ProcessCommand( LONG lCommand, BYTESTREAM_s *pByteStream )
 			CLIENT_QuitNetworkGame( szErrorString );
 		}
 		return;
-	case SVC_NOTHING:
 
+    case SVCC_IS_HELION:
+        Log("Connected to a Helion supported server!\n");
+        IsHelionServer = true;
+        break;
+
+	case SVC_NOTHING:
 		break;
+
 	/* [BB] Does not work with the latest ZDoom changes. Check if it's still necessary.
 	case SVC_SETPLAYERPIECES:
 
 		client_SetPlayerPieces( pByteStream );
 		break;
 	*/
+
 	case SVC_SETGAMEMODE:
 
 		client_SetGameMode( pByteStream );
@@ -9287,3 +9300,11 @@ ADD_STAT( momentum )
 	return ( Out );
 }
 */
+
+//-----------------------------------------------------------------------------
+// Helion
+//-----------------------------------------------------------------------------
+
+bool CLIENT_OnHelionServer() {
+    return IsHelionServer;
+}

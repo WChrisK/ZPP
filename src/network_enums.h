@@ -57,22 +57,16 @@
 #include "EnumToString.h"
 
 //*****************************************************************************
-BEGIN_ENUM( ServerConnectionCommand )
+BEGIN_ENUM(ServerConnectionCommand)
 {
-	// The server has properly received the client's challenge, and is telling
-	// the client to authenticate his map.
-	ENUM_ELEMENT( SVCC_AUTHENTICATE ),
+    ENUM_ELEMENT(SVCC_AUTHENTICATE),
+    ENUM_ELEMENT(SVCC_MAPLOAD),
+    ENUM_ELEMENT(SVCC_ERROR),
+    ENUM_ELEMENT(SVCC_IS_HELION),
 
-	// The server received the client's checksum, and it's valid. Now the server
-	// is telling the client to load the map.
-	ENUM_ELEMENT( SVCC_MAPLOAD ),
-
-	// There was an error during the course of the client trying to connect.
-	ENUM_ELEMENT( SVCC_ERROR ),
-
-	ENUM_ELEMENT( NUM_SERVERCONNECT_COMMANDS )
+    ENUM_ELEMENT(NUM_SERVERCONNECT_COMMANDS)
 }
-END_ENUM( ServerConnectionCommand )
+END_ENUM(ServerConnectionCommand)
 
 //*****************************************************************************
 // Note: If the number of enumerated messages goes beyond 255, commands will need 

@@ -125,6 +125,10 @@
 #include "network/packetarchive.h"
 #include "p_lnspec.h"
 #include "unlagged.h"
+#include "helion/util/Logging.hpp"
+
+using namespace Helion;
+
 
 //*****************************************************************************
 //	MISC CRAP THAT SHOULDN'T BE HERE BUT HAS TO BE BECAUSE OF SLOPPY CODING
@@ -1142,19 +1146,21 @@ void SERVER_SendChatMessage( ULONG ulPlayer, ULONG ulMode, const char *pszString
 
 //*****************************************************************************
 //
-void SERVER_RequestClientToAuthenticate( ULONG ulClient )
+void SERVER_RequestClientToAuthenticate(ULONG clientIndex)
 {
-	g_aClients[ulClient].PacketBuffer.Clear();
-	g_aClients[ulClient].PacketBuffer.ByteStream.WriteByte( SVCC_AUTHENTICATE );
-	g_aClients[ulClient].PacketBuffer.ByteStream.WriteString( level.mapname );
-	// [CK] This lets the client start off with a reasonable gametic. In case
-	// the client would like to do any kind of prediction from gametics in the
-	// future, we can use the current gametic as the base. This also prevents
-	// the client from relying on a gametic of 0 or some unset number.
-	g_aClients[ulClient].PacketBuffer.ByteStream.WriteLong( gametic );
+    g_aClients[clientIndex].PacketBuffer.Clear();
 
-	// Send the packet off.
-	SERVER_SendClientPacket( ulClient, true );
+    g_aClients[clientIndex].PacketBuffer.ByteStream.WriteByte(SVCC_AUTHENTICATE);
+    g_aClients[clientIndex].PacketBuffer.ByteStream.WriteString(level.mapname);
+    g_aClients[clientIndex].PacketBuffer.ByteStream.WriteLong(gametic);
+
+    // This must come after the authentication, since we turn off booleans on
+    // the client when it gets an authentication back. This will then turn it
+    // on if it's a Helion client.
+    if (g_aClients[clientIndex].IsHelion)
+        g_aClients[clientIndex].PacketBuffer.ByteStream.WriteByte(SVCC_IS_HELION);
+
+    SERVER_SendClientPacket(clientIndex, true);
 }
 
 //*****************************************************************************
@@ -1758,6 +1764,9 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
     g_aClients[lClient].bWantNoRestoreFrags = !!(connectFlags & CCF_DONTRESTOREFRAGS);
     g_aClients[lClient].bWantHideCountry = !!(connectFlags & CCF_HIDECOUNTRY);
     g_aClients[lClient].IsHelion = !!(connectFlags & CCF_HELION);
+
+    if (g_aClients[lClient].IsHelion)
+        Log("Helion client connected.\n");
 
 	// [TP] Save whether or not the player wants to hide his account.
 	g_aClients[lClient].WantHideAccount = !!pByteStream->ReadByte();
