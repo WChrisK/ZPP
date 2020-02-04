@@ -89,9 +89,10 @@ enum CONNECTIONSTATE_e
 //[BB] Client connect flags.
 enum
 {
-	CCF_STARTASSPECTATOR			= 1 << 0,
-	CCF_DONTRESTOREFRAGS			= 1 << 1,
-	CCF_HIDECOUNTRY					= 1 << 2,
+    CCF_STARTASSPECTATOR = 1 << 0,
+    CCF_DONTRESTOREFRAGS = 1 << 1,
+    CCF_HIDECOUNTRY = 1 << 2,
+    CCF_HELION = 1 << 3,
 };
 
 //*****************************************************************************

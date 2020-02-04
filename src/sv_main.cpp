@@ -1753,17 +1753,11 @@ void SERVER_SetupNewConnection( BYTESTREAM_s *pByteStream, bool bNewPlayer )
 	clientPassword = pByteStream->ReadString();
 	clientPassword.ToUpper();
 
-	// [BB] Read in the client connection flags.
-	const int connectFlags = pByteStream->ReadByte();
-
-	// Read in whether or not the client wants to start as a spectator.
-	g_aClients[lClient].bWantStartAsSpectator = !!( connectFlags & CCF_STARTASSPECTATOR );
-
-	// Read in whether or not the client wants to start as a spectator.
-	g_aClients[lClient].bWantNoRestoreFrags = !!( connectFlags & CCF_DONTRESTOREFRAGS );
-
-	// [BB] Save whether the clients wants his country to be hidden.
-	g_aClients[lClient].bWantHideCountry = !!( connectFlags & CCF_HIDECOUNTRY );
+    const int connectFlags = pByteStream->ReadByte();
+    g_aClients[lClient].bWantStartAsSpectator = !!(connectFlags & CCF_STARTASSPECTATOR);
+    g_aClients[lClient].bWantNoRestoreFrags = !!(connectFlags & CCF_DONTRESTOREFRAGS);
+    g_aClients[lClient].bWantHideCountry = !!(connectFlags & CCF_HIDECOUNTRY);
+    g_aClients[lClient].IsHelion = !!(connectFlags & CCF_HELION);
 
 	// [TP] Save whether or not the player wants to hide his account.
 	g_aClients[lClient].WantHideAccount = !!pByteStream->ReadByte();
@@ -4266,65 +4260,57 @@ void SERVER_PrintCommand( LONG lCommand )
 //*****************************************************************************
 //*****************************************************************************
 //
-void SERVER_ParsePacket( BYTESTREAM_s *pByteStream )
+void SERVER_ParsePacket(BYTESTREAM_s* byteStream)
 {
-	bool	bPlayerKicked;
-	LONG	lCommand;
+    while (true) {
+        const int command = byteStream->ReadByte();
 
-	while ( 1 )	 
-	{  
-		lCommand = pByteStream->ReadByte();
+        if (command == -1)
+            break;
 
-		// End of message.
-		if ( lCommand == -1 )
-			break;
+        if (sv_showcommands)
+            SERVER_PrintCommand(command);
 
-		// [BB] Option to print commands for debugging purposes.
-		if ( sv_showcommands )
-			SERVER_PrintCommand( lCommand );
+        switch (command) {
+        case CLCC_ATTEMPTCONNECTION:
+            // Client is trying to connect to the server, but is disconnected on his end.
+            SERVER_SetupNewConnection(byteStream, false);
+            break;
 
-		bPlayerKicked = false;
-		switch ( lCommand )
-		{
-		case CLCC_ATTEMPTCONNECTION:
+        case CLCC_ATTEMPTAUTHENTICATION:
+            // Client is attempting to authenticate his level.
+            SERVER_AuthenticateClientLevel(byteStream);
+            break;
 
-			// Client is trying to connect to the server, but is disconnected on his end.
-			SERVER_SetupNewConnection( pByteStream, false );
-			break;
-		case CLCC_ATTEMPTAUTHENTICATION:
+        case CLCC_REQUESTSNAPSHOT:
+            // Client has gotten a connection from the server, and is sending userinfo.
+            SERVER_ConnectNewPlayer(byteStream);
+            break;
 
-			// Client is attempting to authenticate his level.
-			SERVER_AuthenticateClientLevel( pByteStream );
-			break;
-		case CLCC_REQUESTSNAPSHOT:
+        default:
+            // [BB] Only authenticated clients are allowed to send the commands handled in
+            // SERVER_ProcessCommand(). If we would let non authenticated clients do this,
+            // this could be abused to keep non finished connections alive.
+            if (g_aClients[g_lCurrentClient].State < CLS_AUTHENTICATED)
+            {
+                // [BB] Under these special, rare circumstances valid clients can send illegal commands.
+                if (g_aClients[g_lCurrentClient].State != CLS_AUTHENTICATED_BUT_OUTDATED_MAP)
+                    Printf("Illegal command (%d) from non-authenticated client (%s).\n", static_cast<int>(command), NETWORK_GetFromAddress().ToString());
 
-			// Client has gotten a connection from the server, and is sending userinfo.
-			SERVER_ConnectNewPlayer( pByteStream );
-			break;
-		default:
+                // [BB] Ignore the rest of the packet, it can't be valid.
+                while (byteStream->ReadByte() != -1) {
+                }
 
-			// [BB] Only authenticated clients are allowed to send the commands handled in
-			// SERVER_ProcessCommand(). If we would let non authenticated clients do this,
-			// this could be abused to keep non finished connections alive.
-			if ( g_aClients[g_lCurrentClient].State < CLS_AUTHENTICATED )
-			{
-				// [BB] Under these special, rare circumstances valid clients can send illegal commands.
-				if ( g_aClients[g_lCurrentClient].State != CLS_AUTHENTICATED_BUT_OUTDATED_MAP )
-					Printf( "Illegal command (%d) from non-authenticated client (%s).\n", static_cast<int> (lCommand), NETWORK_GetFromAddress().ToString() );
+                break;
+            }
 
-				// [BB] Ignore the rest of the packet, it can't be valid.
-				while ( pByteStream->ReadByte() != -1 );
-				break;
-			}
+            // This returns true if the player was kicked as a result.
+            if (SERVER_ProcessCommand(command, byteStream))
+                return;
 
-
-			// This returns true if the player was kicked as a result.
-			if ( SERVER_ProcessCommand( lCommand, pByteStream ))
-				return;
-
-			break;
-		}
-	}
+            break;
+        }
+    }
 }
 
 //*****************************************************************************

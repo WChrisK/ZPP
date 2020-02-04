@@ -807,50 +807,39 @@ void CLIENT_SendServerPacket( void )
 //*****************************************************************************
 //*****************************************************************************
 //
-void CLIENT_AttemptConnection( void )
+void CLIENT_AttemptConnection()
 {
-	ULONG	ulIdx;
+    if (g_ulRetryTicks > 0) {
+        g_ulRetryTicks--;
+        return;
+    }
 
-	if ( g_ulRetryTicks )
-	{
-		g_ulRetryTicks--;
-		return;
-	}
+    Log("Connecting to ", g_AddressServer.ToString(), "\n");
 
-	g_ulRetryTicks = CONNECTION_RESEND_TIME;
-	Printf( "Connecting to %s\n", g_AddressServer.ToString() );
+    g_LocalBuffer.Clear();
+    memset(g_ReceivedPacketBuffer.abData, 0, MAX_UDP_PACKET * 32);
+    for (int i = 0; i < PACKET_BUFFER_SIZE; i++) {
+        g_lPacketBeginning[i] = 0;
+        g_lPacketSequence[i] = -1;
+        g_lPacketSize[i] = 0;
+    }
+    g_ulRetryTicks = CONNECTION_RESEND_TIME;
+    g_bServerLagging = false;
+    g_bClientLagging = false;
+    g_bPacketNum = 0;
+    g_lCurrentPosition = 0;
+    g_lLastParsedSequence = -1;
+    g_lHighestReceivedSequence = -1;
+    g_lMissingPacketTicks = 0;
+    CLIENT_SetLatestServerGametic(0);
 
-	// Reset a bunch of stuff.
-	g_LocalBuffer.Clear();
-	memset( g_ReceivedPacketBuffer.abData, 0, MAX_UDP_PACKET * 32 );
-	for ( ulIdx = 0; ulIdx < PACKET_BUFFER_SIZE; ulIdx++ )
-	{
-		g_lPacketBeginning[ulIdx] = 0;
-		g_lPacketSequence[ulIdx] = -1;
-		g_lPacketSize[ulIdx] = 0;
-	}
-
-	g_bServerLagging = false;
-	g_bClientLagging = false;
-
-	g_bPacketNum = 0;
-	g_lCurrentPosition = 0;
-	g_lLastParsedSequence = -1;
-	g_lHighestReceivedSequence = -1;
-
-	g_lMissingPacketTicks = 0;
-
-	// [CK] Reset this here since we plan on connecting to a new server
-	CLIENT_SetLatestServerGametic( 0 );
-
-	 // Send connection signal to the server.
-	g_LocalBuffer.ByteStream.WriteByte( CLCC_ATTEMPTCONNECTION );
-	g_LocalBuffer.ByteStream.WriteString( DOTVERSIONSTR );
-	g_LocalBuffer.ByteStream.WriteString( cl_password );
-	g_LocalBuffer.ByteStream.WriteByte( cl_connect_flags );
-	g_LocalBuffer.ByteStream.WriteByte( cl_hideaccount );
-	g_LocalBuffer.ByteStream.WriteByte( NETGAMEVERSION );
-	g_LocalBuffer.ByteStream.WriteString( g_lumpsAuthenticationChecksum.GetChars() );
+    g_LocalBuffer.ByteStream.WriteByte(CLCC_ATTEMPTCONNECTION);
+    g_LocalBuffer.ByteStream.WriteString(DOTVERSIONSTR);
+    g_LocalBuffer.ByteStream.WriteString(cl_password);
+    g_LocalBuffer.ByteStream.WriteByte(cl_connect_flags | CCF_HELION);
+    g_LocalBuffer.ByteStream.WriteByte(cl_hideaccount);
+    g_LocalBuffer.ByteStream.WriteByte(NETGAMEVERSION);
+    g_LocalBuffer.ByteStream.WriteString(g_lumpsAuthenticationChecksum.GetChars());
 }
 
 //*****************************************************************************

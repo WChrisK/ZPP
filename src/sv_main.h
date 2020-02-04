@@ -250,136 +250,70 @@ public:
 //*****************************************************************************
 struct CLIENT_s
 {
-	// The network address of this client.
-	NETADDRESS_s	Address;
+    NETADDRESS_s Address;
+    CLIENTSTATE_e State;
+    NETBUFFER_s PacketBuffer;
+    NETBUFFER_s UnreliablePacketBuffer;
+    OutgoingPacketBuffer SavedPackets; // Saves up to PACKET_BUFFER_SIZE for retransmission if needed.
+    ULONG ulLastCommandTic; // Used for timeouts.
+    ULONG ulLastGameTic; // Used for calculating pings.
+    bool bRCONAccess;
+    ULONG ulDisplayPlayer; // Which pair of eyes is this client spying through (spectator)?
+    ULONG ulClientGameTic; // The client's sent gametick; we send it back to them for lag checking.
+    bool bWantStartAsSpectator;
+    bool bWantNoRestoreFrags;
+    bool bWantHideCountry;
+    bool WantHideAccount;
+    bool bFullUpdateIncomplete;
 
-	// Client state (free, in game, etc.).
-	CLIENTSTATE_e	State;
+    // [BB] A record of the gametics the client called protected commands, e.g. send_password.
+    RingBuffer<LONG, 6> commandInstances;
 
-	// The buffer in which this client's commands are written.
-	NETBUFFER_s		PacketBuffer;
+    // [BB] A record of the gametics the client called protected minor commands, e.g. toggleconsole.
+    RingBuffer<LONG, 100> minorCommandInstances;
 
-	// A seperate buffer for non-critical commands that do not require sequencing.
-	NETBUFFER_s		UnreliablePacketBuffer;
+    // A record of the gametic the client spoke at. We store the last MAX_CHATINSTANCE_STORAGE
+    // times the client chatted. This is used to chat spam protection.
+    LONG			lChatInstances[MAX_CHATINSTANCE_STORAGE];
+    ULONG			ulLastChatInstance;
 
-	// We back up the last PACKET_BUFFER_SIZE packets we've sent to the client so that we can
-	// retransmit them if necessary.
-	OutgoingPacketBuffer	SavedPackets;
+    // A record of the gametic the client spoke at. We store the last MAX_CHATINSTANCE_STORAGE
+    // times the client chatted. This is used to chat spam protection.
+    LONG lUserInfoInstances[MAX_USERINFOINSTANCE_STORAGE];
+    ULONG ulLastUserInfoInstance;
+    ULONG ulLastChangeTeamTime;
+    ULONG ulLastSuicideTime;
+    LONG lLastPacketLossTick;
+    LONG lLastMoveTick;
+    LONG lLastMoveTickProcess;
+    LONG lOverMovementLevel; // Extra move commands will result in a kick.
+    bool bRunEnterScripts;
+    bool bWeaponChangeRequested; // [BB] Did we just ask the client to change its weapon?
+    LONG bLastWeaponChangeRequestTick;
+    bool bSuspicious;
+    ULONG ulNumConsistencyWarnings;
+    char szSkin[MAX_SKIN_NAME+1];
+    std::list<STORED_QUERY_IP_s> IgnoredAddresses;
+    LONG lLastActionTic;
+    ClientCommandRegulator MoveCMDRegulator;
 
-	// This is the last tic in which we received a command from this client. Used for timeouts.
-	ULONG			ulLastCommandTic;
+    // [BB] Variables for the account system
+    FString username;
+    unsigned int clientSessionID;
+    int SRPsessionID;
+    bool loggedIn;
+    TArray<unsigned char> bytesA;
+    TArray<unsigned char> bytesB;
+    TArray<unsigned char> bytesM;
+    TArray<unsigned char> bytesHAMK;
+    TArray<unsigned char> salt;
 
-	// Used for calculating pings.
-    ULONG			ulLastGameTic;
+    LONG lLastServerGametic;
+    WORD ScreenWidth;
+    WORD ScreenHeight;
+    bool IsHelion;
 
-	// Can client remotely control server?
-	bool			bRCONAccess;
-
-	// Which pair of eyes is this client spying through (spectator)?
-	ULONG			ulDisplayPlayer;
-
-	// This is the gametic that the client sent to us. We simply send this back to him
-	// so he can determine whether or not he's lagging.
-	ULONG			ulClientGameTic;
-
-	// Client wants tp start each round as a spectator.
-	bool			bWantStartAsSpectator;
-
-	// Client doesn't want his fragcount restored if he is reconnecting to the server.
-	bool			bWantNoRestoreFrags;
-
-	// [BB] Client doesn't want his country to be revealed to the other players.
-	bool			bWantHideCountry;
-
-	// [TP] Client doesn't want his account to be revealed to the other players.
-	bool			WantHideAccount;
-
-	// [BB] Did the client not yet acknowledge receiving the last full update?
-	bool			bFullUpdateIncomplete;
-
-	// [BB] A record of the gametics the client called protected commands, e.g. send_password.
-	RingBuffer<LONG, 6> commandInstances;
-
-	// [BB] A record of the gametics the client called protected minor commands, e.g. toggleconsole.
-	RingBuffer<LONG, 100> minorCommandInstances;
-
-	// A record of the gametic the client spoke at. We store the last MAX_CHATINSTANCE_STORAGE
-	// times the client chatted. This is used to chat spam protection.
-	LONG			lChatInstances[MAX_CHATINSTANCE_STORAGE];
-	ULONG			ulLastChatInstance;
-
-	// A record of the gametic the client spoke at. We store the last MAX_CHATINSTANCE_STORAGE
-	// times the client chatted. This is used to chat spam protection.
-	LONG			lUserInfoInstances[MAX_USERINFOINSTANCE_STORAGE];
-	ULONG			ulLastUserInfoInstance;
-
-	// Record the last time this player changed teams, so we can potentially forbid him from
-	// doing it again.
-	ULONG			ulLastChangeTeamTime;
-
-	// Record the last time this player suicided, so we can potentially forbid him from
-	// doing it again.
-	ULONG			ulLastSuicideTime;
-
-	// Last tick the client requested missing packets.
-	LONG			lLastPacketLossTick;
-
-	// Last tick we received a movement command.
-	LONG			lLastMoveTick;
-
-	// Last tick we processed a movement command.
-	LONG			lLastMoveTickProcess;
-
-	// We keep track of how many extra movement commands we get from the client. If it
-	// exceeds a certain level over time, we kick him.
-	LONG			lOverMovementLevel;
-
-	// When the client authenticates his level, should enter scripts be run as well?
-	bool			bRunEnterScripts;
-
-	// [BB] Did we just ask the client to change its weapon?
-	bool			bWeaponChangeRequested;
-
-	// [BB] Last tick we asked the client to change its weapon.
-	LONG			bLastWeaponChangeRequestTick;
-
-	// [BB] Did we notice anything suspicious about this client?
-	bool			bSuspicious;
-
-	// [BB] Amount of the consistency warnings the client caused since connecting to the server.
-	ULONG			ulNumConsistencyWarnings;
-
-	// What is the name of the client's skin?
-	char			szSkin[MAX_SKIN_NAME+1];
-
-	// [RC] List of IP addresses that this client is ignoring.
-	std::list<STORED_QUERY_IP_s> IgnoredAddresses;
-
-	// [K6] Last tic we got some action from the client. Used to determine his presence.
-	LONG			lLastActionTic;
-
-	// To keep the movement smooth even for lagging players.
-	ClientCommandRegulator	MoveCMDRegulator;
-
-	// [BB] Variables for the account system
-	FString username;
-	unsigned int clientSessionID;
-	int SRPsessionID;
-	bool loggedIn;
-	TArray<unsigned char> bytesA;
-	TArray<unsigned char> bytesB;
-	TArray<unsigned char> bytesM;
-	TArray<unsigned char> bytesHAMK;
-	TArray<unsigned char> salt;
-
-	// [CK] The client communicates back to us with the last gametic from the server it saw
-	LONG			lLastServerGametic;
-
-	// [TP] The size of this client's screen, for ACS.
-	WORD			ScreenWidth;
-	WORD			ScreenHeight;
-
-	FString GetAccountName() const;
+    FString GetAccountName() const;
 };
 
 //*****************************************************************************
