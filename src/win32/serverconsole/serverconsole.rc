@@ -598,4 +598,4 @@ FONT 8, "Tahoma"
 // Icon resources
 //
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-IDI_ICOSETTINGS    ICON           "../zandronum.ico"
+IDI_ICOSETTINGS    ICON           "../helion.ico"
