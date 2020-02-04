@@ -110,7 +110,8 @@ if( MSVC )
 	# Function-level linking
 	# Disable run-time type information
 	# Set floating point model to fast or the GL render will suffer for it.
-	set( ALL_C_FLAGS "/GF /Gy /GR- /fp:fast" )
+    # C++ latest version
+	set(ALL_C_FLAGS "/GF /Gy /GR- /fp:fast /std:c++latest")
 	
 	if( CMAKE_SIZEOF_VOID_P MATCHES "4")
 		# SSE2 option (mostly to switch it off in VC2012 and later where it's the default
@@ -132,7 +133,6 @@ if( MSVC )
 	else( ZDOOM_GENERATE_ASM )
 		set( REL_C_FLAGS "/MT /Oy /Oi" )
 	endif( ZDOOM_GENERATE_ASM )
-
 	
 	# Debug allocations in debug builds
 	set( DEB_C_FLAGS "/D _CRTDBG_MAP_ALLOC /MTd" )
@@ -154,7 +154,7 @@ if( MSVC )
 	string(REPLACE " /GR" " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} )
 else( MSVC )
 	set( REL_LINKER_FLAGS "" )
-	set( ALL_C_FLAGS "" )
+	set( ALL_C_FLAGS "-std=c++2a" )
 	set( REL_C_FLAGS "" )
 	set( DEB_C_FLAGS "" )
 endif( MSVC )
