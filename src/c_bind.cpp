@@ -76,7 +76,7 @@ static const FBinding DefBindings[] =
 	{ "ctrl", "+attack" },
 	{ "alt", "+strafe" },
 	{ "shift", "+speed" },
-	{ "space", "+use" },
+	{ "e", "+use" },
 	{ "rightarrow", "+right" },
 	{ "leftarrow", "+left" },
 	{ "uparrow", "+forward" },
@@ -204,11 +204,12 @@ static const FBinding DefAutomapBindings[] =
 // [BB] WASD control layout (clashes with Strife's default controls).
 static const FBinding DefNonStrifeBindings[] =
 {
-	{ "w", "+forward" },
-	{ "s", "+back" },
-	{ "a", "+moveleft" },
-	{ "d", "+moveright" },
-	{ NULL }
+    { "w", "+forward" },
+    { "s", "+back" },
+    { "a", "+moveleft" },
+    { "d", "+moveright" },
+    { "space", "+jump" },
+    { NULL }
 };
 
 

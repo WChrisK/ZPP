@@ -37,7 +37,7 @@
 #define ST_OUCHCOUNT			(1*TICRATE)
 
 CVAR( Bool, cl_onekey, false, CVAR_ARCHIVE );
-CVAR( Bool, cl_stfullscreenhud, true, CVAR_ARCHIVE );
+CVAR( Bool, cl_stfullscreenhud, false, CVAR_ARCHIVE );
 EXTERN_CVAR (Bool, vid_fps)
 
 class DDoomStatusBar : public DBaseStatusBar
