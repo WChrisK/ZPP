@@ -8,6 +8,12 @@ A continuation of Zandronum.
 This was a branch off of `zandronum-stable`, at commit `b336d6d`. This is for Zandronum 3.0.1 as per https://bitbucket.org/Torr_Samaho/zandronum-stable/
 
 
+### Building
+
+Follow the guide here: https://wiki.zandronum.com/Compiling_Zandronum_with_Visual_Studio
+
+You will need to likely also get newer versions of the SLL library (plan to remove this) with the new names: https://stackoverflow.com/questions/55476623/cannot-find-libeay32-lib-and-ssleay32-lib-files-when-setting-up-openssl-on-windo
+
 ### License
 
 ZPP extends Zandronum and thus follows Zandronum's license:
