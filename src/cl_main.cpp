@@ -9078,71 +9078,55 @@ void STACK_ARGS CLIENT_PrintWarning( const char* format, ... )
 //*****************************************************************************
 //	CONSOLE COMMANDS
 
-CCMD( connect )
+CCMD(connect)
 {
-	const char	*pszDemoName;
-	UCVarValue	Val;
+    if (Network.IsServer())
+        return;
 
-	// Servers can't connect to other servers!
-	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-		return;
+    if (argv.argc() <= 1)
+    {
+        Printf("Usage: connect <server IP>\n");
+        return;
+    }
 
-	// No IP specified.
-	if ( argv.argc( ) <= 1 )
-	{
-		Printf( "Usage: connect <server IP>\n" );
-		return;
-	}
+    if (Network.IsClient())
+        CLIENT_QuitNetworkGame(nullptr);
 
-	// Potentially disconnect from the current server.
-	// [EP] Makes sense only for clients.
-	if ( NETWORK_GetState() == NETSTATE_CLIENT )
-		CLIENT_QuitNetworkGame( NULL );
+    Network.SetAsClient();
 
-	// Put the game in client mode.
-	NETWORK_SetState( NETSTATE_CLIENT );
+    UCVarValue val;
+    val.Bool = false;
+    sv_cheats.ForceSet(val, CVAR_Bool);
+    am_cheat = 0;
 
-	// Make sure cheats are off.
-	Val.Bool = false;
-	sv_cheats.ForceSet( Val, CVAR_Bool );
-	am_cheat = 0;
+    // Make sure our visibility is normal.
+    R_SetVisibility(8.0f);
 
-	// Make sure our visibility is normal.
-	R_SetVisibility( 8.0f );
+    // Create a server IP from the given string.
+    g_AddressServer.LoadFromString(argv[1]);
 
-	// Create a server IP from the given string.
-	g_AddressServer.LoadFromString( argv[1] );
+    // If the user didn't specify a port, use the default port.
+    if (g_AddressServer.usPort == 0)
+        g_AddressServer.SetPort(DEFAULT_SERVER_PORT);
 
-	// If the user didn't specify a port, use the default port.
-	if ( g_AddressServer.usPort == 0 )
-		g_AddressServer.SetPort( DEFAULT_SERVER_PORT );
+    g_AddressLastConnected = g_AddressServer;
+    gameaction = ga_fullconsole;
 
-	g_AddressLastConnected = g_AddressServer;
+    CLIENT_AttemptConnection();
+    CLIENT_SetConnectionState(CTS_ATTEMPTINGCONNECTION);
 
-	// Put the game in the full console.
-	gameaction = ga_fullconsole;
-
-	// Send out a connection signal.
-	CLIENT_AttemptConnection( );
-
-	// Update the connection state.
-	CLIENT_SetConnectionState( CTS_ATTEMPTINGCONNECTION );
-
-	// If we've elected to record a demo, begin that process now.
-	pszDemoName = Args->CheckValue( "-record" );
-	if (( gamestate == GS_STARTUP ) && ( pszDemoName ))
-		CLIENTDEMO_BeginRecording( pszDemoName );
+    // If we've elected to record a demo, begin that process now.
+    const char* demoName = Args->CheckValue("-record");
+    if (gamestate == GS_STARTUP && demoName)
+        CLIENTDEMO_BeginRecording(demoName);
 }
 
 //*****************************************************************************
 //
-CCMD( disconnect )
+CCMD(disconnect)
 {
-	// Nothing to do if we're not in client mode!
-	if ( NETWORK_GetState( ) != NETSTATE_CLIENT )
-		return;
-
-	CLIENT_QuitNetworkGame ( NULL );
+    if (Network.IsClient())
+        CLIENT_QuitNetworkGame(nullptr);
 }
 
 //*****************************************************************************

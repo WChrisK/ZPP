@@ -339,4 +339,19 @@ public:
 	static void GetMD5 ( const BYTE* pBuf, UINT nLength, FString &OutString );
 };
 
+//-----------------------------------------------------------------------------
+// Helion
+//-----------------------------------------------------------------------------
+
+class NetworkState {
+public:
+    void SetAsClient();
+    bool IsSingle() const;
+    bool IsSingleMultiplayer() const;
+    bool IsClient() const;
+    bool IsServer() const;
+};
+
+extern NetworkState Network;
+
 #endif	// __NETWORK_H__

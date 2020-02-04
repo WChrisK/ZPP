@@ -1532,6 +1532,7 @@ void CMD5Checksum::GetMD5(const BYTE* pBuf, UINT nLength, FString &OutString)
 	OutString = MD5SumFull;
 }
 
+
 //*****************************************************************************
 //	CONSOLE COMMANDS
 
@@ -1615,3 +1616,30 @@ CCMD( testnetstring )
 		Printf( "FAIL!\n" );
 }
 #endif	// _DEBUG
+
+
+//-----------------------------------------------------------------------------
+// Helion
+//-----------------------------------------------------------------------------
+
+NetworkState Network;
+
+void NetworkState::SetAsClient() {
+    NETWORK_SetState(NETSTATE_CLIENT);
+}
+
+bool NetworkState::IsSingle() const {
+    return NETWORK_GetState() == NETSTATE_SINGLE;
+}
+
+bool NetworkState::IsSingleMultiplayer() const {
+    return NETWORK_GetState() == NETSTATE_SINGLE_MULTIPLAYER;
+}
+
+bool NetworkState::IsClient() const {
+    return NETWORK_GetState() == NETSTATE_CLIENT;
+}
+
+bool NetworkState::IsServer() const {
+    return NETWORK_GetState() == NETSTATE_SERVER;
+}
