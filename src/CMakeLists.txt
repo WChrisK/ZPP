@@ -897,6 +897,7 @@ file( GLOB HEADER_FILES
     g_shared/*.h
     g_strife/*.h
 	helion/*.hpp
+	helion/server/*.hpp
 	helion/util/*.hpp
 	helion/util/string/*.hpp
     intermission/*.h
@@ -1245,6 +1246,7 @@ add_executable( zdoom WIN32
     zstrformat.cpp
     zstring.cpp
     # Helion files
+	helion/server/ServerUnlagged.cpp
 	helion/util/Logging.cpp
 	helion/util/string/String.cpp
     # [BL] Huffman is ZAN
@@ -1451,6 +1453,7 @@ include_directories( .
     g_strife
     g_shared
     helion
+	helion/server
 	helion/util
 	helion/util/string
     huffman #ZAN
@@ -1622,8 +1625,8 @@ source_group("Source Files" FILES ${CMAKE_CURRENT_BINARY_DIR}/sc_man_scanner.h s
 # [BB] Zandronum specific source groups
 source_group("Bots" FILES astar.cpp astar.h REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/bot.+")
 source_group("Helion Files" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/helion/.+")
+source_group("Helion Files\\Server" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/helion/server/.+")
 source_group("Helion Files\\Utility" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/helion/util/.+")
-source_group("Helion Files\\Logging" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/helion/util/.+")
 source_group("Helion Files\\Utility\\String" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/helion/util/string/.+")
 source_group("Network\\Client" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/cl_.+")
 source_group("Network\\Misc" REGULAR_EXPRESSION "^${CMAKE_CURRENT_SOURCE_DIR}/network.+")

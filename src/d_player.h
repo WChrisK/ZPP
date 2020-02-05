@@ -427,15 +427,14 @@ struct userinfo_t : TMap<FName,FBaseCVar *>
 			return 0;
 		}
 	}
+
 	int GetTicsPerUpdate() const
 	{
-		if ( CheckKey(NAME_CL_TicsPerUpdate) != NULL )
-			return *static_cast<FIntCVar *>(*CheckKey(NAME_CL_TicsPerUpdate));
-		else {
-			Printf ( "Error: No TicsPerUpdate key found!\n" );
-			return 0;
-		}
+        // This should never be anything but 1, it's 2020 onwards, everyone can
+        // handle this.
+        return 1;
 	}
+
 	int GetConnectionType() const
 	{
 		if ( CheckKey(NAME_CL_ConnectionType) != NULL )

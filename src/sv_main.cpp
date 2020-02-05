@@ -125,6 +125,7 @@
 #include "network/packetarchive.h"
 #include "p_lnspec.h"
 #include "unlagged.h"
+#include "helion/server/ServerUnlagged.hpp"
 #include "helion/util/Logging.hpp"
 
 using namespace Helion;
@@ -5134,6 +5135,26 @@ ClientMoveCommand::ClientMoveCommand ( BYTESTREAM_s *pByteStream )
 		moveCmd.usWeaponNetworkIndex = pByteStream->ReadShort();
 	else
 		moveCmd.usWeaponNetworkIndex = 0;
+
+    if (g_aClients[g_lCurrentClient].IsHelion) {
+        BYTESTREAM_s& byteStream = *pByteStream;
+
+        fixed_t x = byteStream.ReadLong();
+        fixed_t y = byteStream.ReadLong();
+        fixed_t z = byteStream.ReadLong();
+        ServerUnlag.SetSelf(g_lCurrentClient, x, y, z);
+
+        int playerCount = byteStream.ReadShort();
+
+        for (int i = 0; i < playerCount; i++) {
+            int playerIndex = byteStream.ReadShort();
+            x = byteStream.ReadShort() << FRACBITS;
+            y = byteStream.ReadShort() << FRACBITS;
+            z = byteStream.ReadShort() << FRACBITS;
+
+            ServerUnlag.Set(g_lCurrentClient, playerIndex, x, y, z);
+        }
+    }
 }
 
 bool ClientMoveCommand::process( const ULONG ulClient ) const

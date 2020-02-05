@@ -1480,23 +1480,21 @@ void A_FireBulletsHelper ( AActor *self,
 	}
 }
 // [BB] This function should be called by all bullet firing weapons to reduce code duplication.
-void A_CustomFireBullets( AActor *self,
-						  angle_t Spread_XY,
-						  angle_t Spread_Z, 
-						  int NumberOfBullets,
-						  int DamagePerBullet,
-						  const PClass * PuffType,
-						  const char *AttackSound = NULL,
-						  int Flags = 1,
-						  fixed_t Range = 0,
-						  const bool pPlayAttacking = true ){
-  	if ( self->player == NULL)
+void A_CustomFireBullets(AActor* self,
+						 angle_t Spread_XY,
+						 angle_t Spread_Z, 
+						 int NumberOfBullets,
+						 int DamagePerBullet,
+						 const PClass* PuffType,
+						 const char* AttackSound = nullptr,
+						 int Flags = 1,
+						 fixed_t Range = 0,
+						 const bool pPlayAttacking = true) {
+  	if (self->player == nullptr)
 		return;
 
-	if (!self->player) return;
-
-	player_t * player=self->player;
-	AWeapon * weapon=player->ReadyWeapon;
+	player_t* player = self->player;
+	AWeapon* weapon = player->ReadyWeapon;
 
 	//int i;
 	int bangle;

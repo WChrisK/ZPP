@@ -353,74 +353,8 @@ DEFINE_ACTION_FUNCTION_PARAMS(AActor, A_Saw)
 //
 DEFINE_ACTION_FUNCTION(AActor, A_FireShotgun)
 {
-	// [BB] A_FireShotgun is only kept to stay compatible with Dehacked.
-	A_CustomFireBullets( self, angle_t( 5.6 * ANGLE_1), angle_t( 0 * ANGLE_1), 7, 5, PClass::FindClass("BulletPuff"), "weapons/shotgf", true, 0, false );
-	A_GunFlash ( self );
-/*
-	int i;
-	player_t *player;
-
-	if (NULL == (player = self->player))
-	{
-		return;
-	}
-
-	// [BC] If we're the server, tell clients that a weapon is being fired.
-	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-		SERVERCOMMANDS_WeaponSound( ULONG( player - players ), "weapons/shotgf", ULONG( player - players ), SVCF_SKIPTHISCLIENT );
-
-	S_Sound (self, CHAN_WEAPON,  "weapons/shotgf", 1, ATTN_NORM);
-	AWeapon *weapon = self->player->ReadyWeapon;
-	if (weapon != NULL)
-	{
-		if (!weapon->DepleteAmmo (weapon->bAltFire, true, 1))
-			return;
-		P_SetPsprite (player, ps_flash, weapon->FindState(NAME_Flash));
-		self->player->psprites[ps_flash].processPending = true;
-	}
-	player->mo->PlayAttacking2 ();
-
-	angle_t pitch = P_BulletSlope (self);
-
-	// [BC] If we're the server, tell clients to update this player's state.
-	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-		SERVERCOMMANDS_SetPlayerState( ULONG( player - players ), STATE_PLAYER_ATTACK2, ULONG( player - players ), SVCF_SKIPTHISCLIENT );
-
-	// [BC] Weapons are handled by the server.
-	if ( NETWORK_GetState( ) == NETSTATE_CLIENT )
-		return;
-
-
-	for (i=0 ; i<7 ; i++)
-		P_GunShot (self, false, PClass::FindClass(NAME_BulletPuff), pitch);
-
-	// [BC] Apply spread.
-	if ( player->cheats2 & CF2_SPREAD )
-	{
-		fixed_t		SavedActorAngle;
-
-		SavedActorAngle = self->angle;
-		self->angle += ( ANGLE_45 / 3 );
-		for (i=0 ; i<7 ; i++)
-			P_GunShot (self, false, PClass::FindClass(NAME_BulletPuff), pitch);
-		self->angle = SavedActorAngle;
-
-		SavedActorAngle = actor->angle;
-		self->angle -= ( ANGLE_45 / 3 );
-		for (i=0 ; i<7 ; i++)
-			P_GunShot (self, false, PClass::FindClass(NAME_BulletPuff), pitch);
-		self->angle = SavedActorAngle;
-	}
-
-	// [BC] If the player hit a player with his attack, potentially give him a medal.
-	if ( player->bStruckPlayer )
-		PLAYER_StruckPlayer( player );
-	else
-		player->ulConsecutiveHits = 0;
-
-	// [BC] Tell all the bots that a weapon was fired.
-	BOTS_PostWeaponFiredEvent( ULONG( player - players ), BOTEVENT_FIREDSHOTGUN, BOTEVENT_ENEMY_FIREDSHOTGUN, BOTEVENT_PLAYER_FIREDSHOTGUN );
-*/
+    A_CustomFireBullets(self, angle_t(5.6 * ANGLE_1), angle_t(0 * ANGLE_1), 7, 5, PClass::FindClass("BulletPuff"), "weapons/shotgf", true, 0, false);
+    A_GunFlash(self);
 }
 
 //
@@ -428,94 +362,8 @@ DEFINE_ACTION_FUNCTION(AActor, A_FireShotgun)
 //
 DEFINE_ACTION_FUNCTION(AActor, A_FireShotgun2)
 {
-	// [BB] A_FireShotgun2 is only kept to stay compatible with Dehacked.
-	A_CustomFireBullets( self, angle_t( 11.2 * ANGLE_1), angle_t( 7.1 * ANGLE_1), 20, 5, PClass::FindClass("BulletPuff"), "weapons/sshotf", true, 0, false );
-	A_GunFlash ( self );
-/*
-	int 		i;
-	angle_t 	angle;
-	int 		damage;
-	player_t *player;
-
-	if (NULL == (player = self->player))
-	{
-		return;
-	}
-
-	// [BC] If we're the server, tell clients that a weapon is being fired.
-	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-		SERVERCOMMANDS_WeaponSound( ULONG( player - players ), "weapons/sshotf", ULONG( player - players ), SVCF_SKIPTHISCLIENT );
-
-	S_Sound (self, CHAN_WEAPON, "weapons/sshotf", 1, ATTN_NORM);
-	AWeapon *weapon = self->player->ReadyWeapon;
-	if (weapon != NULL)
-	{
-		if (!weapon->DepleteAmmo (weapon->bAltFire, true, 2))
-			return;
-		P_SetPsprite (player, ps_flash, weapon->FindState(NAME_Flash));
-		self->player->psprites[ps_flash].processPending = true;
-	}
-	player->mo->PlayAttacking2 ();
-
-	// [BC] If we're the server, tell clients to update this player's state.
-	if ( NETWORK_GetState( ) == NETSTATE_SERVER )
-		SERVERCOMMANDS_SetPlayerState( ULONG( player - players ), STATE_PLAYER_ATTACK2, ULONG( player - players ), SVCF_SKIPTHISCLIENT );
-
-	// [BC] Weapons are handled by the server.
-	// [BB] To make hitscan decals kinda work online, we may not stop here yet.
-	if ( NETWORK_GetState( ) == NETSTATE_CLIENT && !cl_hitscandecalhack )
-		return;
-
-	angle_t pitch = P_BulletSlope (self);
-		
-	for (i=0 ; i<20 ; i++)
-	{
-		damage = 5*(pr_fireshotgun2()%3+1);
-		angle = self->angle;
-		angle += pr_fireshotgun2.Random2() << 19;
-
-		// Doom adjusts the bullet slope by shifting a random number [-255,255]
-		// left 5 places. At 2048 units away, this means the vertical position
-		// of the shot can deviate as much as 255 units from nominal. So using
-		// some simple trigonometry, that means the vertical angle of the shot
-		// can deviate by as many as ~7.097 degrees or ~84676099 BAMs.
-
-		P_LineAttack (self,
-					  angle,
-					  PLAYERMISSILERANGE,
-					  pitch + (pr_fireshotgun2.Random2() * 332063), damage,
-					  NAME_Hitscan, NAME_BulletPuff);
-
-		// [BC] Apply spread.
-		if ( player->cheats2 & CF2_SPREAD )
-		{
-			P_LineAttack (actor,
-						  angle + ( ANGLE_45 / 3 ),
-						  PLAYERMISSILERANGE,
-						  pitch + (pr_fireshotgun2.Random2() * 332063), damage,
-						  NAME_Hitscan, NAME_BulletPuff);
-
-			P_LineAttack (actor,
-						  angle - ( ANGLE_45 / 3 ),
-						  PLAYERMISSILERANGE,
-						  pitch + (pr_fireshotgun2.Random2() * 332063), damage,
-						  NAME_Hitscan, NAME_BulletPuff);
-		}
-	}
-
-	// [BB] Even with the online hitscan decal hack, a client has to stop here.
-	if ( NETWORK_GetState( ) == NETSTATE_CLIENT )
-		return;
-
-	// [BC] If the player hit a player with his attack, potentially give him a medal.
-	if ( player->bStruckPlayer )
-		PLAYER_StruckPlayer( player );
-	else
-		player->ulConsecutiveHits = 0;
-
-	// [BC] Tell all the bots that a weapon was fired.
-	BOTS_PostWeaponFiredEvent( ULONG( player - players ), BOTEVENT_FIREDSSG, BOTEVENT_ENEMY_FIREDSSG, BOTEVENT_PLAYER_FIREDSSG );
-*/
+	A_CustomFireBullets(self, angle_t(11.2 * ANGLE_1), angle_t(5.9 * ANGLE_1), 20, 5, PClass::FindClass("BulletPuff"), "weapons/sshotf", true, 0, false);
+	A_GunFlash(self);
 }
 
 DEFINE_ACTION_FUNCTION(AActor, A_OpenShotgun2)

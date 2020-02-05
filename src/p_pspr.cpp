@@ -47,7 +47,7 @@
 // This was determined by making a triangle from the max autoaim range (1024) by
 // player radius (16) to get an angle of ~0.89 degrees. This below value is the
 // binary value of this angle.
-#define AUTOAIM_MINANGLE		0xA20500
+#define AUTOAIM_MINANGLE 0x600000
 
 // TYPES -------------------------------------------------------------------
 
@@ -1050,46 +1050,52 @@ void A_GunFlash(AActor *self, FState *flash, const int Flags)
 // Sets a slope so a near miss is at aproximately
 // the height of the intended target
 //
+#define VANILLA_ANGLE_COUNT 3
+#define ACCURATE_ANGLE_COUNT 21
 
-angle_t P_BulletSlope (AActor *mo, AActor **pLineTarget)
+static const int vanillaAngles[VANILLA_ANGLE_COUNT] = { 0, -(1 << 26), 1 << 26 };
+static const int accurateAngles[ACCURATE_ANGLE_COUNT] = {
+    0,
+    AUTOAIM_MINANGLE * -1, AUTOAIM_MINANGLE * 1,
+    AUTOAIM_MINANGLE * -2, AUTOAIM_MINANGLE * 2,
+    AUTOAIM_MINANGLE * -3, AUTOAIM_MINANGLE * 3,
+    AUTOAIM_MINANGLE * -4, AUTOAIM_MINANGLE * 4,
+    AUTOAIM_MINANGLE * -5, AUTOAIM_MINANGLE * 5,
+    AUTOAIM_MINANGLE * -6, AUTOAIM_MINANGLE * 6,
+    AUTOAIM_MINANGLE * -7, AUTOAIM_MINANGLE * 7,
+    AUTOAIM_MINANGLE * -8, AUTOAIM_MINANGLE * 8,
+    AUTOAIM_MINANGLE * -9, AUTOAIM_MINANGLE * 9,
+   -(1 << 26), 1 << 26
+};
+
+angle_t P_BulletSlope(AActor* mo, AActor** pLineTarget)
 {
-	static const int angdiff[15] = {
-		AUTOAIM_MINANGLE * -1, AUTOAIM_MINANGLE * 1, AUTOAIM_MINANGLE * -2, AUTOAIM_MINANGLE * 2,
-		AUTOAIM_MINANGLE * -3, AUTOAIM_MINANGLE * 3, AUTOAIM_MINANGLE * -4, AUTOAIM_MINANGLE * 4,
-		AUTOAIM_MINANGLE * -5, AUTOAIM_MINANGLE * 5, AUTOAIM_MINANGLE * -6, AUTOAIM_MINANGLE * 6,
-		-( 1<<26 ), 1<<26, 0 }; // [CK] New angles
-	int i;
-	angle_t an;
-	angle_t pitch;
-	AActor *linetarget;
-	int endIndex = zacompatflags & ZACOMPATF_AUTOAIM ? 12 : 0; // [CK/TP] Our ending index depends on compatflags.
+    angle_t pitch = mo->pitch;
 
-	// [Spleen]
-	UNLAGGED_Reconcile( mo );
-	UNLAGGED_AddReconciliationBlocker( );
+    if (mo->player && mo->player->userinfo.GetAimDist() <= ANGLE_1 / 2 && level.IsFreelookAllowed())
+        return pitch;
 
-	// see which target is to be aimed at
-	i = 14; // [TP/CK] Now 14
-	do
-	{
-		an = mo->angle + angdiff[i];
-		pitch = P_AimLineAttack (mo, an, 16*64*FRACUNIT, &linetarget);
+	UNLAGGED_Reconcile(mo);
+	UNLAGGED_AddReconciliationBlocker();
 
-		if (mo->player != NULL &&
-			level.IsFreelookAllowed() &&
-			mo->player->userinfo.GetAimDist() <= ANGLE_1/2)
-		{
-			break;
-		}
-	} while (linetarget == NULL && --i >= endIndex); // [TP] 0 changed to endIndex
-	if (pLineTarget != NULL)
-	{
-		*pLineTarget = linetarget;
-	}
+    bool useVanillaAutoaim = zacompatflags & ZACOMPATF_AUTOAIM;
+    int iterations = useVanillaAutoaim ? VANILLA_ANGLE_COUNT : ACCURATE_ANGLE_COUNT;
+    const int* angles = useVanillaAutoaim ? vanillaAngles : accurateAngles;
 
-	// [Spleen]
-	UNLAGGED_RemoveReconciliationBlocker( );
-	UNLAGGED_Restore( mo );
+    AActor* lineTarget;
+    for (int i = 0; i < iterations; i++) {
+        angle_t angle = mo->angle + angles[i];
+        pitch = P_AimLineAttack(mo, angle, 16 * 64 * FRACUNIT, &lineTarget);
+
+        if (lineTarget)
+            break;
+    }
+
+	if (pLineTarget)
+		*pLineTarget = lineTarget;
+
+	UNLAGGED_RemoveReconciliationBlocker();
+	UNLAGGED_Restore(mo);
 
 	return pitch;
 }

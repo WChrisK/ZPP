@@ -64,6 +64,10 @@
 #include "network_enums.h"
 #include "p_acs.h"
 #include "v_video.h"
+#include "helion/util/Assert.hpp"
+
+using namespace Helion::Assert;
+
 
 //*****************************************************************************
 //	VARIABLES
@@ -75,6 +79,45 @@ static	ULONG	g_ulLastDropTime = 0;
 static	ULONG	g_ulLastSVCheatMessageTime = 0;
 static	bool g_bIgnoreWeaponSelect = false;
 SDWORD g_sdwCheckCmd = 0;
+
+
+//-----------------------------------------------------------------------------
+// Helper functions
+//-----------------------------------------------------------------------------
+
+static void writeUnlaggedPositions() {
+    static_assert(MAXPLAYERS < std::numeric_limits<uint16_t>::max(), "More players supported");
+
+    if (not CLIENT_OnHelionServer())
+        return;
+
+    BYTESTREAM_s& byteStream = CLIENT_GetLocalBuffer()->ByteStream;
+
+    AActor* playerEntity = players[consoleplayer].mo;
+    byteStream.WriteLong(playerEntity ? playerEntity->x : 0);
+    byteStream.WriteLong(playerEntity ? playerEntity->y : 0);
+    byteStream.WriteLong(playerEntity ? playerEntity->z : 0);
+
+    int playerCount = 0;
+    for (int playerIndex = 0; playerIndex < MAXPLAYERS; playerIndex++)
+        if (playerIndex != consoleplayer && players[playerIndex].mo)
+            playerCount++;
+
+    // TODO: Should optimize this for when there's lots of players in the server!
+    byteStream.WriteShort(playerCount);
+
+    for (int playerIndex = 0; playerIndex < MAXPLAYERS; playerIndex++) {
+        if (playerIndex == consoleplayer || players[playerIndex].mo == nullptr)
+            continue;
+
+        APlayerPawn& entity = *players[playerIndex].mo;
+        byteStream.WriteShort(playerIndex);
+        byteStream.WriteShort(entity.x >> FRACBITS);
+        byteStream.WriteShort(entity.y >> FRACBITS);
+        byteStream.WriteShort(entity.z >> FRACBITS);
+    }
+}
+
 
 //*****************************************************************************
 //	FUNCTIONS
@@ -373,6 +416,8 @@ void CLIENTCOMMANDS_ClientMove( void )
 		else
 			CLIENT_GetLocalBuffer( )->ByteStream.WriteShort( players[consoleplayer].ReadyWeapon->GetClass( )->getActorNetworkIndex() );
 	}
+
+    writeUnlaggedPositions();
 }
 
 //*****************************************************************************

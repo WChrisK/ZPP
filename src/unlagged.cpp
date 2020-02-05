@@ -61,6 +61,12 @@
 #include "sv_commands.h"
 #include "templates.h"
 #include "d_netinf.h"
+#include "Defines.hpp"
+#include "helion/server/ServerUnlagged.hpp"
+#include "helion/util/Logging.hpp"
+
+using namespace Helion;
+
 
 CVAR(Flag, sv_nounlagged, zadmflags, ZADF_NOUNLAGGED);
 CVAR( Bool, sv_unlagged_debugactors, false, 0 )
@@ -131,108 +137,125 @@ int UNLAGGED_Gametic( player_t *player )
 // Call UNLAGGED_Restore afterwards to restore everything
 void UNLAGGED_Reconcile( AActor *actor )
 {
-	//Only do anything if the actor to be reconciled is a player,
-	//it's on a server with unlagged on, and reconciliation is not being blocked
-	if ( !actor->player || (NETWORK_GetState() != NETSTATE_SERVER) || ( zadmflags & ZADF_NOUNLAGGED ) ||
-		 ( ( actor->player->userinfo.GetClientFlags() & CLIENTFLAGS_UNLAGGED ) == 0 ) || ( reconciliationBlockers > 0 ) )
-		return;
+    if (actor->player == nullptr or
+            not Network.IsServer() or
+            (zadmflags & ZADF_NOUNLAGGED) or
+            (actor->player->userinfo.GetClientFlags() & CLIENTFLAGS_UNLAGGED) == 0 or
+            reconciliationBlockers > 0) {
+        return;
+    }
 
-	//Something went wrong, reconciliation was attempted when the gamestate
-	//was already reconciled!
+    int playerNumber = (actor->player - players) / sizeof(player_t*);
+
+    CLIENT_s* client = SERVER_GetClient(playerNumber);
+    if (client == nullptr) {
+        I_Error("UNLAGGED_Reconcile being used on a player that does not have a client");
+    }
+
 	if (reconciledGame)
-	{
-		// [BB] I_Error terminates the current game, so we need to reset the value of reconciledGame,
-		// otherwise UNLAGGED_Reconcile will always trigger this error from now on.
-		reconciledGame = false;
-		I_Error("UNLAGGED_Reconcile called while reconciledGame is true");
+    {
+        // [BB] I_Error terminates the current game, so we need to reset the
+        // value of reconciledGame, otherwise UNLAGGED_Reconcile will always
+        // trigger this error from now on.
+        reconciledGame = false;
+        I_Error("UNLAGGED_Reconcile called while reconciledGame is true");
 	}
 
-	const int unlaggedGametic = UNLAGGED_Gametic( actor->player );
+    const int unlaggedGametic = UNLAGGED_Gametic(actor->player);
 
-	//Don't reconcile if the unlagged gametic is the same as the current
-	//because unlagged data for this tic may not be completely recorded yet
-	if (unlaggedGametic == gametic)
-		return;
+    // Don't reconcile if the unlagged gametic is the same as the current
+    // because unlagged data for this tic may not be completely recorded yet.
+    if (unlaggedGametic == gametic)
+        return;
 
-	reconciledGame = true;
+    reconciledGame = true;
 
-	//find the index
-	const int unlaggedIndex = unlaggedGametic % UNLAGGEDTICS;
+    const int unlaggedIndex = unlaggedGametic % UNLAGGEDTICS;
 
-	//reconcile the sectors
-	for (int i = 0; i < numsectors; ++i)
-	{
-		sectors[i].floorplane.restoreD = sectors[i].floorplane.d;
-		sectors[i].ceilingplane.restoreD = sectors[i].ceilingplane.d;
+    for (int i = 0; i < numsectors; i++) {
+        sectors[i].floorplane.restoreD = sectors[i].floorplane.d;
+        sectors[i].ceilingplane.restoreD = sectors[i].ceilingplane.d;
 
-		sectors[i].floorplane.d = sectors[i].floorplane.unlaggedD[unlaggedIndex];
-		sectors[i].ceilingplane.d = sectors[i].ceilingplane.unlaggedD[unlaggedIndex];
-	}
+        sectors[i].floorplane.d = sectors[i].floorplane.unlaggedD[unlaggedIndex];
+        sectors[i].ceilingplane.d = sectors[i].ceilingplane.unlaggedD[unlaggedIndex];
+    }
 
-	//reconcile the players
 	for (int i = 0; i < MAXPLAYERS; ++i)
 	{
 		if (playeringame[i] && players[i].mo && !players[i].bSpectating)
 		{
-			players[i].restoreX = players[i].mo->x;
-			players[i].restoreY = players[i].mo->y;
-			players[i].restoreZ = players[i].mo->z;
+            // client->IsHelion
+            if (false) {
+                players[i].restoreX = players[i].mo->x;
+                players[i].restoreY = players[i].mo->y;
+                players[i].restoreZ = players[i].mo->z;
+                players[i].restoreFloorZ = players[i].mo->floorz;
+                players[i].restoreCeilingZ = players[i].mo->ceilingz;
 
-			//Work around limitations of SetOrigin to prevent players
-			//from getting stuck in ledges
-			players[i].restoreFloorZ = players[i].mo->floorz;
-			// [BB] ... and from jumping up through solid 3D floors.
-			players[i].restoreCeilingZ = players[i].mo->ceilingz;
+                const Vec3Fixed playerPos = ServerUnlag.Players[playerNumber][i].Position;
+                //Log("Reconciling ", playerNumber, " -> ", i, " at: ", playerPos.X, " ", playerPos.Y, " ", playerPos.Z, "\n");
+                players[i].mo->SetOrigin(playerPos.X, playerPos.Y, playerPos.Z);
+            } else {
+			    players[i].restoreX = players[i].mo->x;
+			    players[i].restoreY = players[i].mo->y;
+			    players[i].restoreZ = players[i].mo->z;
 
-			//Also, don't reconcile the shooter because the client is supposed
-			//to predict him
-			if (players+i != actor->player)
-			{
-				players[i].mo->SetOrigin(
-					players[i].unlaggedX[unlaggedIndex],
-					players[i].unlaggedY[unlaggedIndex],
-					players[i].unlaggedZ[unlaggedIndex]
-				);
-			}
-			else
-				//However, the client sometimes mispredicts itself if it's on a moving sector.
-				//We need to correct for that.
-			{
-				//current server floorz/ceilingz before reconciliation
-				fixed_t serverFloorZ = actor->floorz;
-				fixed_t serverCeilingZ = actor->ceilingz;
+			    //Work around limitations of SetOrigin to prevent players
+			    //from getting stuck in ledges
+			    players[i].restoreFloorZ = players[i].mo->floorz;
+			    // [BB] ... and from jumping up through solid 3D floors.
+			    players[i].restoreCeilingZ = players[i].mo->ceilingz;
 
-				// [BB] Try to reset floorz/ceilingz to account for the fact that the sector the actor is in was possibly reconciled.
-				actor->floorz = actor->Sector->floorplane.ZatPoint (actor->x, actor->y);
-				actor->ceilingz = actor->Sector->ceilingplane.ZatPoint (actor->x, actor->y);
-				P_FindFloorCeiling(actor, false);
+			    //Also, don't reconcile the shooter because the client is supposed
+			    //to predict him
+			    if (players + i != actor->player)
+			    {
+				    players[i].mo->SetOrigin(
+					    players[i].unlaggedX[unlaggedIndex],
+					    players[i].unlaggedY[unlaggedIndex],
+					    players[i].unlaggedZ[unlaggedIndex]
+				    );
+			    }
+			    else
+				    //However, the client sometimes mispredicts itself if it's on a moving sector.
+				    //We need to correct for that.
+			    {
+				    //current server floorz/ceilingz before reconciliation
+				    fixed_t serverFloorZ = actor->floorz;
+				    fixed_t serverCeilingZ = actor->ceilingz;
 
-				//force the shooter out of the floor/ceiling - a client has to mispredict in this case,
-				//because not mispredicting would mean the client would think he's inside the floor/ceiling
-				if (actor->z + actor->height > actor->ceilingz)
-					actor->z = actor->ceilingz - actor->height;
+				    // [BB] Try to reset floorz/ceilingz to account for the fact that the sector the actor is in was possibly reconciled.
+				    actor->floorz = actor->Sector->floorplane.ZatPoint (actor->x, actor->y);
+				    actor->ceilingz = actor->Sector->ceilingplane.ZatPoint (actor->x, actor->y);
+				    P_FindFloorCeiling(actor, false);
 
-				if (actor->z < actor->floorz)
-					actor->z = actor->floorz;
+				    //force the shooter out of the floor/ceiling - a client has to mispredict in this case,
+				    //because not mispredicting would mean the client would think he's inside the floor/ceiling
+				    if (actor->z + actor->height > actor->ceilingz)
+					    actor->z = actor->ceilingz - actor->height;
 
-				//floor moved up - a client might have mispredicted himself too low due to gravity
-				//and the client thinking the floor is lower than it actually is
-				// [BB] But only do this if the sector actually moved. Note: This adjustment seems to break on some kind of non-moving 3D floors.
-				if ( (serverFloorZ > actor->floorz) && (( actor->Sector->floorplane.restoreD != actor->Sector->floorplane.d ) || ( actor->Sector->ceilingplane.restoreD != actor->Sector->ceilingplane.d )) )
-				{
-					//shooter was standing on the floor, let's pull him down to his floor if
-					//he wasn't falling
-					if ( (actor->z == serverFloorZ) && (actor->velz >= 0) )
-						actor->z = actor->floorz;
+				    if (actor->z < actor->floorz)
+					    actor->z = actor->floorz;
 
-					//todo: more correction for floor moving up
-				}
+				    //floor moved up - a client might have mispredicted himself too low due to gravity
+				    //and the client thinking the floor is lower than it actually is
+				    // [BB] But only do this if the sector actually moved. Note: This adjustment seems to break on some kind of non-moving 3D floors.
+				    if ( (serverFloorZ > actor->floorz) && (( actor->Sector->floorplane.restoreD != actor->Sector->floorplane.d ) || ( actor->Sector->ceilingplane.restoreD != actor->Sector->ceilingplane.d )) )
+				    {
+					    //shooter was standing on the floor, let's pull him down to his floor if
+					    //he wasn't falling
+					    if ( (actor->z == serverFloorZ) && (actor->velz >= 0) )
+						    actor->z = actor->floorz;
 
-				//todo: more correction for client misprediction
+					    //todo: more correction for floor moving up
+				    }
 
-				// Keep track of our adjustements.
-				reconcilledZ = actor->z;
-			}
+				    //todo: more correction for client misprediction
+
+				    // Keep track of our adjustements.
+				    reconcilledZ = actor->z;
+			    }
+            }
 		}
 	}	
 }
